@@ -1,10 +1,14 @@
 package com.java.crawler.basdat;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilterWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -50,10 +54,13 @@ public class SpiderLeg {
                 System.out.println("\n**Visiting** Received web page at " + url);
                 
                 // output to console info dari page/document dalam bentuk html
-                System.out.println(htmlDocument.html());
+//                System.out.println(htmlDocument.html());
                 
                 // save html ke txt
-                // code here !!!!!!!!!!!!!!!!!!!!!!
+                PrintWriter pw = new PrintWriter("/home/satrio/FileCrawl/test.txt");
+                pw.println(htmlDocument.html());
+                
+                // get content dari <p> dan <h1>
             }
             else{
                 System.err.println("terjadi error !");
