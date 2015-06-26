@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.java.crawler.basdat;
 
 import java.util.ArrayList;
@@ -62,21 +57,26 @@ public class Spider {
             // instant SpiderLeg
             leg = new SpiderLeg(); 
 
-            currentUrl = this.getNextUrl();
-            System.out.println("current url = " + currentUrl);
+            if(listPageToVisit.size() > 0){
+                currentUrl = this.getNextUrl();
+                System.out.println("current url = " + currentUrl);
 
-            // proses crawling, banyak yg terjadi disini
-            leg.crawl(currentUrl); 
-            
-            // setelah crawling add current URL ke listPageVisited
-            this.listPageVisited.add(currentUrl); 
-            
-            // tambah semua link hasil crawling ke listPageToVisit
-            seeding(); 
+                // proses crawling, banyak yg terjadi disini
+                leg.crawl(currentUrl); 
 
-            // nandain doang URL apa aja yg udah dicrawl
-            for(String s : this.listPageVisited){
-                    System.err.println(s + " sudah dicrawl, yeah !");
+                // setelah crawling add current URL ke listPageVisited
+                this.listPageVisited.add(currentUrl); 
+
+                // tambah semua link hasil crawling ke listPageToVisit
+                seeding(); 
+
+                // nandain doang URL apa aja yg udah dicrawl
+                for(String s : this.listPageVisited){
+                        System.err.println(s + " sudah dicrawl, yeah !");
+                }
+            }
+            else{
+                break;
             }
         }
         // proses crawling sudah selesai, show message finished
@@ -109,5 +109,15 @@ public class Spider {
      */
     public void setSeed(String seed) {
         this.seed = seed;
+    }
+
+    /**
+     * Contributor : 
+     *  - satrio adityo (satrioadityo@gmail.com)
+     * method yang digunakan untuk get seed
+     * @return 
+     */
+    public String getSeed() {
+        return seed;
     }
 }

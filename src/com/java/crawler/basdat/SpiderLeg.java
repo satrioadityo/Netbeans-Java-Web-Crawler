@@ -55,6 +55,9 @@ public class SpiderLeg {
                 // save html ke txt
                 // code here !!!!!!!!!!!!!!!!!!!!!!
             }
+            else{
+                System.err.println("terjadi error !");
+            }
 
             // jika page yg dibuka bukan html
             if(!connection.response().contentType().contains("text/html")) {
