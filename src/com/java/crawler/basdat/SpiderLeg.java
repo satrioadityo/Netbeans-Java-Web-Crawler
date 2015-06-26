@@ -30,7 +30,7 @@ public class SpiderLeg {
 
     private ArrayList<String> links = new ArrayList<String>();      // arraylist untuk menampung link yang didapat hasil crawl
     private Document htmlDocument;                                  // document ini gunanya untuk mentransform web page ke document agar bisa diextract
-
+    int numb = 0;
     /**
      * Contributor : 
      *  - satrio adityo (satrioadityo@gmail.com)
@@ -54,12 +54,12 @@ public class SpiderLeg {
                 System.out.println("\n**Visiting** Received web page at " + url);
                 
                 // output to console info dari page/document dalam bentuk html
-//                System.out.println(htmlDocument.html());
+                // System.out.println(htmlDocument.html());
                 
                 // save html ke txt
-                PrintWriter pw = new PrintWriter("/home/satrio/FileCrawl/test.txt");
+                PrintWriter pw = new PrintWriter("/home/satrio/FileCrawl/test"+numb+".txt");
                 pw.println(htmlDocument.html());
-                
+                pw.close();
                 // get content dari <p> dan <h1>
             }
             else{
@@ -204,5 +204,9 @@ public class SpiderLeg {
      */
     public ArrayList<String> getLinks() {
         return this.links;
+    }
+
+    public void setNumb(int numb) {
+        this.numb = numb;
     }
 }
