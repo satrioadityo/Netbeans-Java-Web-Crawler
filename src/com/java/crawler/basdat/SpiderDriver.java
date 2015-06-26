@@ -15,7 +15,7 @@ public class SpiderDriver {
         Spider spider = new Spider();
         
         // pasang seed
-        String seed = "http://satrioadityo.tk/blog/test-upload-materi/";
+        String seed = "http://www.tribunnews.com/techno/2015/06/25/telkomsel-sukses-ujicoba-volte-dan-wifi-calling";
         spider.setSeed(seed);
         
         //mulai crawling

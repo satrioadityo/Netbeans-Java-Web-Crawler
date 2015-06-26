@@ -61,6 +61,7 @@ public class SpiderLeg {
                 pw.println(htmlDocument.html());
                 pw.close();
                 // get content dari <p> dan <h1>
+                System.out.println("aaa"+htmlDocument.select("p").text()+"aaa");
             }
             else{
                 System.err.println("terjadi error !");
@@ -129,7 +130,7 @@ public class SpiderLeg {
         
         // ambil kata-kata setelah '/', simpan ke variable nama. Nama disini akan jadi nama file yg disimpan ke folder
         String name = absUrl.substring(indexname+1, absUrl.length());
-        System.out.println("the name is " +name);
+        //System.out.println("the name is " +name);
         
         // proses filter, jika namanya mengandung .pdf .doc .docx .txt akan disimpan
         if( name.contains(".pdf") || name.contains(".doc") 
