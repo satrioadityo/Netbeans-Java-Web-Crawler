@@ -57,11 +57,13 @@ public class SpiderLeg {
                 // System.out.println(htmlDocument.html());
                 
                 // save html ke txt
-                PrintWriter pw = new PrintWriter("/home/satrio/FileCrawl/test"+numb+".txt");
+                PrintWriter pw = new PrintWriter("/home/satrio/FileCrawl/html"+numb+".txt");
                 pw.println(htmlDocument.html());
                 pw.close();
                 // get content dari <p> dan <h1>
-                System.out.println("aaa"+htmlDocument.select("p").text()+"aaa");
+                PrintWriter pw2 = new PrintWriter("/home/satrio/FileCrawl/content"+numb+".txt");
+                pw2.println(htmlDocument.select("p").text());
+                pw2.close();
             }
             else{
                 System.err.println("terjadi error !");
