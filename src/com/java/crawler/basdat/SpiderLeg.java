@@ -1,10 +1,7 @@
 package com.java.crawler.basdat;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FilterWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,6 +9,7 @@ import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import javax.swing.JTextArea;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -40,7 +38,8 @@ public class SpiderLeg {
      *      file dan imagenya jika file tersebut downloadable
      * @param url , url yang akan dicrawl
      */
-    public void crawl(String url) {
+    public void crawl(String url, JTextArea crawlProcess, 
+            JTextArea contentProcess, String folderFilePath, String folderImagePath) {
         try {
             // membuat koneksi ke url
             Connection connection = Jsoup.connect(url);
@@ -51,17 +50,20 @@ public class SpiderLeg {
             
             // 200 itu tanda kalo semua koneksi OK
             if(connection.response().statusCode() == 200) { 
-                System.out.println("\n**Visiting** Received web page at " + url);
+                crawlProcess.setText(crawlProcess.getText() + "\n**Visiting** Received web page at " + url);
+                // System.out.println("\n**Visiting** Received web page at " + url);
                 
                 // output to console info dari page/document dalam bentuk html
                 // System.out.println(htmlDocument.html());
                 
                 // save html ke txt
-                PrintWriter pw = new PrintWriter("/home/satrio/FileCrawl/html"+numb+".txt");
+                //PrintWriter pw = new PrintWriter("/home/satrio/FileCrawl/html"+numb+".txt")
+                PrintWriter pw = new PrintWriter(folderFilePath+"/html"+numb+".txt");
                 pw.println(htmlDocument.html());
                 pw.close();
                 // get content dari <p> dan <h1>
-                PrintWriter pw2 = new PrintWriter("/home/satrio/FileCrawl/content"+numb+".txt");
+                //PrintWriter pw2 = new PrintWriter("/home/satrio/FileCrawl/content"+numb+".txt");
+                PrintWriter pw2 = new PrintWriter(folderFilePath+"/content"+numb+".txt");
                 pw2.println(htmlDocument.select("p").text());
                 pw2.close();
             }
@@ -72,12 +74,14 @@ public class SpiderLeg {
             // jika page yg dibuka bukan html
             if(!connection.response().contentType().contains("text/html")) {
                 // show failure message, not crawl
-                System.out.println("**Failure** Retrieved something other than HTML");
+                crawlProcess.setText(crawlProcess.getText() + "**Failure** Retrieved something other than HTML");
+                //System.out.println("**Failure** Retrieved something other than HTML");
             }
 
             // get all link
             Elements linksOnPage = htmlDocument.select("a[href]");
-            System.out.println("Found (" + linksOnPage.size() + ") links");
+            crawlProcess.setText(crawlProcess.getText() + "Found (" + linksOnPage.size() + ") links");
+            //System.out.println("Found (" + linksOnPage.size() + ") links");
 
             // untuk setiap link akan ditampung di arraylist links
             for(Element link : linksOnPage) {
@@ -87,7 +91,7 @@ public class SpiderLeg {
                 // jika linknya downloadable maka download !
                 if(link.absUrl("href").lastIndexOf("/")!=link.absUrl("href").length()){
                     // proses download file, disimpan ke folder device
-                    getFile(link.absUrl("href"));
+                    getFile(link.absUrl("href"), contentProcess, folderFilePath);
                 }
             }
 
@@ -101,7 +105,7 @@ public class SpiderLeg {
                 System.out.println("Image Found!");
                 System.out.println("src attribute is : "+src);
                 //proses simpan image ke folder device
-                getImages(src);
+                getImages(src, contentProcess, folderImagePath);
             }
         }
         catch(IOException ioe) {
@@ -118,7 +122,7 @@ public class SpiderLeg {
      * FS : link tersebut didownload, filenya disimpan ke folder
      * @param absUrl , absurl link file yg downloadable
      */
-    private void getFile(String absUrl) {
+    private void getFile(String absUrl, JTextArea contentProcess, String folderFilePath) {
         // cari '/' dari link
         int indexname = absUrl.lastIndexOf("/");
         
@@ -141,19 +145,23 @@ public class SpiderLeg {
             try {
                 // membuka link file yg downloadable
                 url = new URL(absUrl);
-                System.out.println("url file = "+url);
+                // System.out.println("url file = "+url);
+                contentProcess.setText(contentProcess.getText() + "\nurl file = " +url);
                 
                 // menggunakan java i/o untuk penyimpanan file ke folder
                 InputStream in = url.openStream();
                 // "/home/satrio/FileCrawl/" adalah letak foldernya
+                //OutputStream out = new BufferedOutputStream(
+                //        new FileOutputStream( "/home/satrio/FileCrawl/"+ name));
                 OutputStream out = new BufferedOutputStream(
-                        new FileOutputStream( "/home/satrio/FileCrawl/"+ name));
+                        new FileOutputStream(folderFilePath + "/" + name));
                 for (int b; (b = in.read()) != -1;) {
                         out.write(b);
                 }
                 out.close();
                 in.close();
-                System.out.println("success save pdf to device!");
+                //System.out.println("success save pdf to device!");
+                contentProcess.setText(contentProcess.getText() + "success save "+name+".pdf to "+folderFilePath + "\n");
             } catch (MalformedURLException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -176,7 +184,7 @@ public class SpiderLeg {
      * 
      * @param absUrl , absurl link file yg downloadable
      */
-    public void getImages(String src) throws IOException {
+    public void getImages(String src, JTextArea contentProcess, String folderImagePath) throws IOException {
         //Exctract the name of the image from the src attribute
         int indexname = src.lastIndexOf("/");
         if (indexname == src.length()) {
@@ -188,13 +196,16 @@ public class SpiderLeg {
         //Open a URL Stream
         URL url = new URL(src);
         InputStream in = url.openStream();
-        OutputStream out = new BufferedOutputStream(new FileOutputStream( "/home/satrio/ImageCrawl"+ name));
+        //OutputStream out = new BufferedOutputStream(new FileOutputStream( "/home/satrio/ImageCrawl"+ name));
+        OutputStream out = new BufferedOutputStream(new FileOutputStream(folderImagePath + "/"+ name));
         for (int b; (b = in.read()) != -1;) {
                 out.write(b);
         }
         out.close();
         in.close();
-        System.out.println("success save image to device!");
+        //System.out.println("success save image to device!");
+        contentProcess.setText(contentProcess.getText() + "success save "+name+" to "+folderImagePath + "\n");
+        
     }
 
     /**

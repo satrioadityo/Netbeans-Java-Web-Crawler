@@ -1,6 +1,7 @@
 package com.java.crawler.basdat;
 
 import java.util.ArrayList;
+import javax.swing.JTextArea;
 
 /**
  *
@@ -46,7 +47,8 @@ public class Spider {
      * IS : Spider memiliki seed
      * FS : Spider mempunyai page tambahan yg harus dicrawl
      */
-    public void startCrawl() {
+    public void startCrawl(JTextArea crawlingProcess, JTextArea contentProcess,
+            String folderFilePath, String folderImagePath) {
         // seeding pertama
         initSeeding(seed);
 
@@ -59,11 +61,13 @@ public class Spider {
 
             if(listPageToVisit.size() > 0){
                 currentUrl = this.getNextUrl();
-                System.out.println("current url = " + currentUrl);
+                String dataCrawling = crawlingProcess.getText() + "\n";
+                crawlingProcess.setText(dataCrawling + "current url = " + currentUrl);
+                //System.out.println("current url = " + currentUrl);
 
                 // proses crawling, banyak yg terjadi disini
                 leg.setNumb(this.listPageVisited.size());
-                leg.crawl(currentUrl); 
+                leg.crawl(currentUrl, crawlingProcess, contentProcess, folderFilePath, folderImagePath); 
 
                 // setelah crawling add current URL ke listPageVisited
                 this.listPageVisited.add(currentUrl); 
@@ -72,8 +76,11 @@ public class Spider {
                 seeding(); 
 
                 // nandain doang URL apa aja yg udah dicrawl
-                for(String s : this.listPageVisited){
-                        System.err.println(s + " sudah dicrawl, yeah !");
+                dataCrawling = crawlingProcess.getText() + "\n";
+                crawlingProcess.setText(dataCrawling);
+                for(String s : this.listPageVisited) {
+                    crawlingProcess.setText(crawlingProcess.getText() + "\n" + s + " sudah dicrawl, yeah !");
+                    //System.err.println(crawlingProcess.getText() + "\n" + s + " sudah dicrawl, yeah !");
                 }
             }
             else{
@@ -81,7 +88,8 @@ public class Spider {
             }
         }
         // proses crawling sudah selesai, show message finished
-        System.out.println("\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
+        crawlingProcess.setText(crawlingProcess.getText() + "\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
+        //System.out.println("\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
     }
 
     /**

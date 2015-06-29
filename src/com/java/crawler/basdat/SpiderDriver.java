@@ -19,7 +19,7 @@ public class SpiderDriver {
         spider.setSeed(seed);
         
         //mulai crawling
-        spider.startCrawl();
+        //spider.startCrawl();
     }
     
 }
