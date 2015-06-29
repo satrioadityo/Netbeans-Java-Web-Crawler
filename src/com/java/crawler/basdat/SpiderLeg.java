@@ -146,7 +146,7 @@ public class SpiderLeg {
                 // membuka link file yg downloadable
                 url = new URL(absUrl);
                 // System.out.println("url file = "+url);
-                contentProcess.setText(contentProcess.getText() + "\nurl file = " +url);
+                contentProcess.setText(contentProcess.getText() + "\nurl file = " +url+"\n");
                 
                 // menggunakan java i/o untuk penyimpanan file ke folder
                 InputStream in = url.openStream();
@@ -161,7 +161,7 @@ public class SpiderLeg {
                 out.close();
                 in.close();
                 //System.out.println("success save pdf to device!");
-                contentProcess.setText(contentProcess.getText() + "success save "+name+".pdf to "+folderFilePath + "\n");
+                contentProcess.setText(contentProcess.getText() + "success save "+name+" to "+folderFilePath + "\n");
             } catch (MalformedURLException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();

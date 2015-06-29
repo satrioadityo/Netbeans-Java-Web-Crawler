@@ -9,7 +9,7 @@ import javax.swing.JTextArea;
  * class ini digunakan untuk menjalankan crawler leg
  */
 public class Spider {
-    private static final int LIMIT = 1;                                     // limiter yg akan menentukan berapa page yg akan dicrawl
+    private static int LIMIT;                                     // limiter yg akan menentukan berapa page yg akan dicrawl
     private String seed;                                                    // seed adalah link yg akan dicrawl pertama kali
     private ArrayList<String> listPageVisited = new ArrayList<String>();    // list page yg sudah pernah dicrawl, untuk pencegahan agar tidak terjadi crawl page yg sama berkali-kali
     private ArrayList<String> listPageToVisit = new ArrayList<String>();    // list page yg harus dikunjungi
@@ -128,5 +128,13 @@ public class Spider {
      */
     public String getSeed() {
         return seed;
+    }
+
+    public static void setLIMIT(int LIMIT) {
+        Spider.LIMIT = LIMIT;
+    }
+
+    public static int getLIMIT() {
+        return LIMIT;
     }
 }
