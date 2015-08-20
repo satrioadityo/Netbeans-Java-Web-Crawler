@@ -1,7 +1,20 @@
 package com.java.crawler.basdat;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
-import javax.swing.JTextArea;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /**
  *
@@ -13,8 +26,16 @@ public class Spider {
     private String seed;                                                    // seed adalah link yg akan dicrawl pertama kali
     private ArrayList<String> listPageVisited = new ArrayList<String>();    // list page yg sudah pernah dicrawl, untuk pencegahan agar tidak terjadi crawl page yg sama berkali-kali
     private ArrayList<String> listPageToVisit = new ArrayList<String>();    // list page yg harus dikunjungi
-    private SpiderLeg leg;                                                  // objek SpiderLeg agar Spider bisa melakukan crawl
+    
+    // menggunakan user_agent tipuan, agar browser mengenali robot sebagai browser beneran haha
+    private static final String USER_AGENT =
+                    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.112 Safari/535.1";
 
+    private ArrayList<String> links = new ArrayList<String>();      // arraylist untuk menampung link yang didapat hasil crawl
+    private Document htmlDocument;                                  // document ini gunanya untuk mentransform web page ke document agar bisa diextract
+    int numb = 0;
+
+    
     /**
      * Contributor : 
      *  - satrio adityo (satrioadityo@gmail.com)
@@ -37,7 +58,7 @@ public class Spider {
      */
     private void seeding() {
         // menambahkan semua link hasil crawl ke listPageToVisit
-        this.listPageToVisit.addAll(leg.getLinks());
+        this.listPageToVisit.addAll(this.getLinks());
     }
 
     /**
@@ -47,8 +68,7 @@ public class Spider {
      * IS : Spider memiliki seed
      * FS : Spider mempunyai page tambahan yg harus dicrawl
      */
-    public void startCrawl(JTextArea crawlingProcess, JTextArea contentProcess,
-            String folderFilePath, String folderImagePath) {
+    public void startCrawl(String folderFilePath) {
         // seeding pertama
         initSeeding(seed);
 
@@ -56,18 +76,13 @@ public class Spider {
         while(this.listPageVisited.size() < LIMIT){
             String currentUrl;
             
-            // instant SpiderLeg
-            leg = new SpiderLeg(); 
-
             if(listPageToVisit.size() > 0){
                 currentUrl = this.getNextUrl();
-                String dataCrawling = crawlingProcess.getText() + "\n";
-                crawlingProcess.setText(dataCrawling + "current url = " + currentUrl);
-                //System.out.println("current url = " + currentUrl);
+                System.out.println("current url = " + currentUrl);
 
                 // proses crawling, banyak yg terjadi disini
-                leg.setNumb(this.listPageVisited.size());
-                leg.crawl(currentUrl, crawlingProcess, contentProcess, folderFilePath, folderImagePath); 
+                this.setNumb(this.listPageVisited.size());
+                this.crawl(currentUrl, folderFilePath); 
 
                 // setelah crawling add current URL ke listPageVisited
                 this.listPageVisited.add(currentUrl); 
@@ -76,11 +91,8 @@ public class Spider {
                 seeding(); 
 
                 // nandain doang URL apa aja yg udah dicrawl
-                dataCrawling = crawlingProcess.getText() + "\n";
-                crawlingProcess.setText(dataCrawling);
                 for(String s : this.listPageVisited) {
-                    crawlingProcess.setText(crawlingProcess.getText() + "\n" + s + " sudah dicrawl, yeah !");
-                    //System.err.println(crawlingProcess.getText() + "\n" + s + " sudah dicrawl, yeah !");
+                    System.out.println("\n" + s + " sudah dicrawl, yeah !");
                 }
             }
             else{
@@ -88,8 +100,132 @@ public class Spider {
             }
         }
         // proses crawling sudah selesai, show message finished
-        crawlingProcess.setText(crawlingProcess.getText() + "\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
-        //System.out.println("\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
+        System.out.println("\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
+    }
+    
+    /**
+     * Contributor : 
+     *  - satrio adityo (satrioadityo@gmail.com)
+     * method yang digunakan untuk mengcrawl web page, mendapatkan semua link, download file dan image
+     * IS : link, file, dan image belum didapatkan
+     * FS : setelah proses crawl dari suatu url, didapatkan semua link yg ada di page tersebut beserta 
+     *      file dan imagenya jika file tersebut downloadable
+     * @param url , url yang akan dicrawl
+     */
+    public void crawl(String url, String folderFilePath) {
+        try {
+            // membuat koneksi ke url
+            Connection connection = Jsoup.connect(url);
+            
+            // mentransform page menjadi document untuk diextract nantinya
+            Document htmlDocument = connection.get();
+            this.htmlDocument = htmlDocument;
+            
+            File NewFolder = null;
+            
+            // 200 itu tanda kalo semua koneksi OK
+            if(connection.response().statusCode() == 200) { 
+                System.out.println("**Visiting** Received web page at " + url);
+                // save html ke txt
+                NewFolder = new File(""+folderFilePath+"/"+numb);
+                NewFolder.mkdir();
+                PrintWriter pw = new PrintWriter(NewFolder.getAbsolutePath()+"/html"+numb+".txt");
+                pw.println(htmlDocument.html());
+                pw.close();
+            }
+            else{
+                System.err.println("terjadi error !");
+            }
+
+            // jika page yg dibuka bukan html
+            if(!connection.response().contentType().contains("text/html")) {
+                // show failure message, not crawl
+                System.out.println("**Failure** Retrieved something other than HTML");
+            }
+            
+            // get all link
+            Elements linksOnPage = htmlDocument.select("a[href]");
+            System.out.println("Found (" + linksOnPage.size() + ") links");
+
+            // untuk setiap link akan ditampung di arraylist links
+            for(Element link : linksOnPage) {
+                //System.out.println(link.absUrl("href"));
+                this.links.add(link.absUrl("href"));
+
+                // jika linknya downloadable maka download !
+                if(link.absUrl("href").lastIndexOf("/")!=link.absUrl("href").length()){
+                    // proses download file, disimpan ke folder device
+                    getFile(link.absUrl("href"), NewFolder.getAbsolutePath());
+                }
+            }
+
+            // get image dari document
+            Elements img = htmlDocument.getElementsByTag("img");
+
+            // untuk setiap image
+            for (Element el : img) {
+                // untuk setiap element dapatkan link imagenya
+                String src = el.absUrl("src");
+                System.out.println("Image Found!");
+                System.out.println("src attribute is : "+src);
+                //proses simpan image ke folder device
+                getImages(src,NewFolder.getAbsolutePath());
+            }
+
+        }
+        catch(IOException ioe) {
+                // Tidak berhasil request HTTP
+        }
+    }
+    
+    /**
+     * Contributor : 
+     *  - satrio adityo (satrioadityo@gmail.com)
+     * method yang digunakan untuk menyimpan image ke device
+     * IS : terdapat link file yg downloadable
+     * FS : link tersebut didownload, filenya disimpan ke folder
+     * 
+     * proses yg ada di method ini hampir sama dengan method getFile !!!
+     * 
+     * @param absUrl , absurl link file yg downloadable
+     */
+    public void getImages(String src, String folderImagePath) throws IOException {
+        //Exctract the name of the image from the src attribute
+        int indexname = src.lastIndexOf("/");
+        if (indexname == src.length()) {
+            src = src.substring(1, indexname);
+        }
+        indexname = src.lastIndexOf("/");
+        String name = src.substring(indexname, src.length());
+        System.out.println("the name is " +name);
+        //Open a URL Stream
+        URL url = new URL(src);
+        InputStream in = url.openStream();
+        //OutputStream out = new BufferedOutputStream(new FileOutputStream( "/home/satrio/ImageCrawl"+ name));
+        OutputStream out = new BufferedOutputStream(new FileOutputStream(folderImagePath+"/"+ name));
+        for (int b; (b = in.read()) != -1;) {
+                out.write(b);
+        }
+        out.close();
+        in.close();
+        //System.out.println("success save image to device!");
+        
+    }
+    
+    /**
+     * Contributor : 
+     *  - satrio adityo (satrioadityo@gmail.com)
+     * method yang digunakan untuk mengembalikan links
+     * IS : terdapat link file yg downloadable
+     * FS : link tersebut didownload, filenya disimpan ke folder
+     * @return links, kumpulan link hasil crawl
+     */
+    public ArrayList<String> getLinks() {
+        return this.links;
+    }
+
+    public void setNumb(int numb) {
+        this.numb = numb;
     }
 
     /**
@@ -108,6 +244,63 @@ public class Spider {
         } while(this.listPageVisited.contains(nextUrl)); 
 
         return nextUrl; // return link yang belum dikunjungi untuk dicrawl
+    }
+    
+    /**
+     * Contributor : 
+     *  - satrio adityo (satrioadityo@gmail.com)
+     * method yang digunakan untuk menyimpan file ke device
+     * IS : terdapat link file yg downloadable
+     * FS : link tersebut didownload, filenya disimpan ke folder
+     * @param absUrl , absurl link file yg downloadable
+     */
+    private void getFile(String absUrl, String folderFilePath) {
+        // cari '/' dari link
+        int indexname = absUrl.lastIndexOf("/");
+        
+        // jika '/' ada di paling akhir, hilangkan '/' yg paling akhir, biar bisa ambil nama filenya
+        if (indexname == absUrl.length()) {
+            absUrl = absUrl.substring(1, indexname); // '/' paling akhir sudah hilang
+        }
+        
+        // cari '/' baru yg terakhir
+        indexname = absUrl.lastIndexOf("/");
+        
+        // ambil kata-kata setelah '/', simpan ke variable nama. Nama disini akan jadi nama file yg disimpan ke folder
+        String name = absUrl.substring(indexname+1, absUrl.length());
+        //System.out.println("the name is " +name);
+        
+        // proses filter, jika namanya mengandung .pdf .doc .docx .txt akan disimpan
+        if( name.contains(".pdf") || name.contains(".doc") 
+            || name.contains(".docx") || name.contains(".txt")) {
+            URL url;
+            try {
+                // membuka link file yg downloadable
+                url = new URL(absUrl);
+                System.out.println("url file = "+url);
+                
+                // menggunakan java i/o untuk penyimpanan file ke folder
+                InputStream in = url.openStream();
+                // "/home/satrio/FileCrawl/" adalah letak foldernya
+                //OutputStream out = new BufferedOutputStream(
+                //        new FileOutputStream( "/home/satrio/FileCrawl/"+ name));
+                OutputStream out = new BufferedOutputStream(
+                        new FileOutputStream(folderFilePath + "/" + name));
+                for (int b; (b = in.read()) != -1;) {
+                        out.write(b);
+                }
+                out.close();
+                in.close();
+                System.out.println("success save pdf to device!");
+            } catch (MalformedURLException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+        }
     }
 
     /**

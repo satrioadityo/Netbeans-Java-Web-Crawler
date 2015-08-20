@@ -6,9 +6,12 @@
 package com.java.crawler.basdat;
 
 import java.io.File;
-import javax.swing.JFileChooser;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -17,14 +20,45 @@ import javax.swing.JTextField;
 public class BasdatCrawler extends javax.swing.JFrame {
 
     Spider spider;
-    SpiderLeg leg;
     /**
      * Creates new form BasdatCrawler
      */
     public BasdatCrawler() {
         initComponents();
         spider = new Spider();
-        leg = new SpiderLeg();
+        redirectSystemStreams();
+    }
+    
+    //The following codes set where the text get redirected.    
+    private void updateTextArea(final String text) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+              txtCrawlingProcess.append(text);
+            }
+        });
+    }
+
+    //Followings are The Methods that do the Redirect, you can simply Ignore them. 
+    private void redirectSystemStreams() {
+        OutputStream out = new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                updateTextArea(String.valueOf((char) b));
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                updateTextArea(new String(b, off, len));
+            }
+
+            @Override
+            public void write(byte[] b) throws IOException {
+                write(b, 0, b.length);
+            }
+        };
+
+        System.setOut(new PrintStream(out, true));
+        System.setErr(new PrintStream(out, true));
     }
     
     public void openFilePathDialog(JTextField textField){
@@ -64,18 +98,12 @@ public class BasdatCrawler extends javax.swing.JFrame {
         jLabel3 = new javax.swing.JLabel();
         txtFilePath = new javax.swing.JTextField();
         btnFilePath = new javax.swing.JButton();
-        jLabel4 = new javax.swing.JLabel();
-        txtImagePath = new javax.swing.JTextField();
-        btnImagePath = new javax.swing.JButton();
         jLabel7 = new javax.swing.JLabel();
         txtLimit = new javax.swing.JTextField();
         jPanel3 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         txtCrawlingProcess = new javax.swing.JTextArea();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        txtContentProcess = new javax.swing.JTextArea();
         jLabel5 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -101,6 +129,9 @@ public class BasdatCrawler extends javax.swing.JFrame {
                 .addContainerGap())
         );
 
+        txtURL.setText("http://");
+        txtURL.setToolTipText("include the protocol !");
+
         btnStartCrawl.setText("Start Crawl");
         btnStartCrawl.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -110,21 +141,14 @@ public class BasdatCrawler extends javax.swing.JFrame {
 
         jLabel2.setText("Web address :");
 
-        jLabel3.setText("Save file :");
+        jLabel3.setText("Save Crawling Result to :");
+
+        txtFilePath.setEditable(false);
 
         btnFilePath.setText("File Path");
         btnFilePath.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnFilePathActionPerformed(evt);
-            }
-        });
-
-        jLabel4.setText("Save image :");
-
-        btnImagePath.setText("Image Path");
-        btnImagePath.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnImagePathActionPerformed(evt);
             }
         });
 
@@ -142,20 +166,15 @@ public class BasdatCrawler extends javax.swing.JFrame {
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel2)
                             .addComponent(jLabel3)
-                            .addComponent(jLabel4)
                             .addComponent(jLabel7))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtLimit)
                             .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(txtFilePath)
-                                    .addComponent(txtImagePath))
+                                .addComponent(btnFilePath, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(btnFilePath, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnImagePath, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                            .addComponent(txtURL)
-                            .addComponent(txtLimit))))
+                                .addComponent(txtFilePath, javax.swing.GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE))
+                            .addComponent(txtURL, javax.swing.GroupLayout.Alignment.TRAILING))))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -168,35 +187,22 @@ public class BasdatCrawler extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
-                    .addComponent(txtFilePath, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnFilePath))
+                    .addComponent(btnFilePath)
+                    .addComponent(txtFilePath, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtImagePath, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnImagePath)
-                    .addComponent(jLabel4))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtLimit, javax.swing.GroupLayout.DEFAULT_SIZE, 27, Short.MAX_VALUE)
-                    .addComponent(jLabel7))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addComponent(jLabel7)
+                    .addComponent(txtLimit))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 51, Short.MAX_VALUE)
                 .addComponent(btnStartCrawl)
                 .addContainerGap())
         );
 
-        txtCrawlingProcess.setEditable(false);
         txtCrawlingProcess.setColumns(20);
         txtCrawlingProcess.setRows(5);
         jScrollPane1.setViewportView(txtCrawlingProcess);
 
-        txtContentProcess.setEditable(false);
-        txtContentProcess.setColumns(20);
-        txtContentProcess.setRows(5);
-        jScrollPane2.setViewportView(txtContentProcess);
-
         jLabel5.setText("Crawling Process");
-
-        jLabel6.setText("Content Process");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -205,26 +211,19 @@ public class BasdatCrawler extends javax.swing.JFrame {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel5)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 404, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(jLabel6)
-                        .addContainerGap(289, Short.MAX_VALUE))
-                    .addComponent(jScrollPane2)))
+                        .addComponent(jLabel5)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1))
+                .addContainerGap())
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(jLabel6))
+                .addComponent(jLabel5)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 207, Short.MAX_VALUE)
-                    .addComponent(jScrollPane2))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 209, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -268,24 +267,20 @@ public class BasdatCrawler extends javax.swing.JFrame {
 
     private void btnFilePathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFilePathActionPerformed
         // TODO add your handling code here:
-        System.out.println("file");
         this.openFilePathDialog(txtFilePath);
     }//GEN-LAST:event_btnFilePathActionPerformed
 
     private void btnStartCrawlActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartCrawlActionPerformed
-        // TODO add your handling code here:
-        System.out.println("start crawl");
-        
+
+        System.out.println("starting crawl");        
         // check user input
         if (!"".equals(txtURL.getText()) &&
                 !"".equals(txtFilePath.getText()) &&
-                !"".equals(txtImagePath.getText()) &&
                 !"".equals(txtLimit.getText())) {
             // user input is valid, START CRAWL
             String url = txtURL.getText();
             String filePath = txtFilePath.getText();
-            String imagePath = txtImagePath.getText();
-            int limit = 10;
+            int limit = 10; // set default limit
             try {
                 limit = Integer.parseInt(txtLimit.getText());
             } catch (Exception e) {
@@ -293,19 +288,13 @@ public class BasdatCrawler extends javax.swing.JFrame {
             }
             spider.setSeed(url);
             spider.setLIMIT(limit);
-            spider.startCrawl(txtCrawlingProcess, txtContentProcess, filePath, imagePath);
+            spider.startCrawl(filePath);
         }
         else{
             JOptionPane.showMessageDialog(BasdatCrawler.this, "Lengkapi inputan", 
                     "ERROR", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnStartCrawlActionPerformed
-
-    private void btnImagePathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImagePathActionPerformed
-        // TODO add your handling code here:
-        System.out.println("image");
-        this.openFilePathDialog(txtImagePath);
-    }//GEN-LAST:event_btnImagePathActionPerformed
 
     /**
      * @param args the command line arguments
@@ -344,26 +333,20 @@ public class BasdatCrawler extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnFilePath;
-    private javax.swing.JButton btnImagePath;
     private javax.swing.JButton btnStartCrawl;
     private javax.swing.JFileChooser chooser;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JPanel mainPane;
-    private javax.swing.JTextArea txtContentProcess;
     private javax.swing.JTextArea txtCrawlingProcess;
     private javax.swing.JTextField txtFilePath;
-    private javax.swing.JTextField txtImagePath;
     private javax.swing.JTextField txtLimit;
     private javax.swing.JTextField txtURL;
     // End of variables declaration//GEN-END:variables
