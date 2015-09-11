@@ -5,13 +5,25 @@
  */
 package com.java.crawler.basdat;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /**
  *
@@ -19,14 +31,23 @@ import javax.swing.SwingUtilities;
  */
 public class BasdatCrawler extends javax.swing.JFrame {
 
-    Spider spider;
+    private int LIMIT;                                               // limiter yg akan menentukan berapa page yg akan dicrawl
+    private String seed;                                                    // seed adalah link yg akan dicrawl pertama kali
+    private ArrayList<String> listPageVisited = new ArrayList<String>();    // list page yg sudah pernah dicrawl, untuk pencegahan agar tidak terjadi crawl page yg sama berkali-kali
+    private ArrayList<String> listPageToVisit = new ArrayList<String>();    // list page yg harus dikunjungi
+    
+    // menggunakan user_agent tipuan, agar browser mengenali robot sebagai browser beneran haha
+    private static final String USER_AGENT =
+                    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.112 Safari/535.1";
+
+    private ArrayList<String> links = new ArrayList<String>();      // arraylist untuk menampung link yang didapat hasil crawl
+    private Document htmlDocument;                                  // document ini gunanya untuk mentransform web page ke document agar bisa diextract
+    int numb = 0;
     /**
      * Creates new form BasdatCrawler
      */
     public BasdatCrawler() {
         initComponents();
-        spider = new Spider();
-//        redirectSystemStreams();
     }
 
     public void openFilePathDialog(JTextField textField){
@@ -234,18 +255,24 @@ public class BasdatCrawler extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnFilePathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFilePathActionPerformed
-        // TODO add your handling code here:
+        // get folder untuk menyimpan hasil crawling
         this.openFilePathDialog(txtFilePath);
     }//GEN-LAST:event_btnFilePathActionPerformed
 
     private void btnStartCrawlActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartCrawlActionPerformed
-
-        System.out.println("starting crawl");        
+        
+        // ketika button start crawl di klik akan memulai crawling
+        System.out.println("starting crawl");
+        
+        // pastikan listPageToVisit & listPageVisited dimulai dari kosong
+        listPageToVisit.clear();
+        listPageVisited.clear();
+        
         // check user input
         if (!"".equals(txtURL.getText()) &&
                 !"".equals(txtFilePath.getText()) &&
                 !"".equals(txtLimit.getText())) {
-            // user input is valid, START CRAWL
+            // user input is valid, get value dari field
             String url = txtURL.getText();
             String filePath = txtFilePath.getText();
             int limit = 10; // set default limit
@@ -254,46 +281,201 @@ public class BasdatCrawler extends javax.swing.JFrame {
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(BasdatCrawler.this, "Input limitnya angka!", "ERROR", JOptionPane.ERROR_MESSAGE);
             }
-            spider.setSeed(url);
-            spider.setLIMIT(limit);
-            spider.startCrawl(filePath);
+            
+            // set root url to crawl
+            listPageToVisit.add(url);
+            // set limit
+            LIMIT = limit;
+            
+            // start crawling
+            // proses crawl, selama belum mencapai LIMIT proses crawling akan terus berjalan
+            while(this.listPageVisited.size() < LIMIT){
+                String currentUrl;
+
+                if(listPageToVisit.size() > 0){
+                    currentUrl = this.getNextUrl();
+                    System.out.println("current url to crawl = " + currentUrl);
+
+                    // proses crawling, banyak yg terjadi disini
+                    // FIXME
+//                    this.setNumb(this.listPageVisited.size());
+                    this.crawl(currentUrl, filePath); 
+
+                    // setelah crawling add current URL ke listPageVisited
+                    this.listPageVisited.add(currentUrl); 
+
+                    // tambah semua link hasil crawling ke listPageToVisit
+                    // TODO filter url
+                    listPageToVisit.addAll(links);
+
+                    // nandain doang URL apa aja yg udah dicrawl
+                    for(String s : this.listPageVisited) {
+                        System.out.println("\n" + s + " sudah dicrawl, yeah !");
+                    }
+                }
+                else{
+                    break;
+                }
+            }
+            // proses crawling sudah selesai, show message finished
+            System.out.println("\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
+            
         }
         else{
             JOptionPane.showMessageDialog(BasdatCrawler.this, "Lengkapi inputan", 
                     "ERROR", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnStartCrawlActionPerformed
+    
+    private String getNextUrl() {
+        String nextUrl;
+        do {
+            // melakukan dequeue sampai link yg belum dikunjungi didapat
+            nextUrl = this.listPageToVisit.remove(0);
+        } while(this.listPageVisited.contains(nextUrl)); 
 
-    //The following codes set where the text get redirected.    
-    private void updateTextArea(final String text) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-              txtCrawlingProcess.append(text);
-            }
-        });
+        return nextUrl; // return link yang belum dikunjungi untuk dicrawl
     }
-
-    //Followings are The Methods that do the Redirect, you can simply Ignore them. 
-    private void redirectSystemStreams() {
-        OutputStream out = new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                updateTextArea(String.valueOf((char) b));
+    
+    public void getImages(String src, String folderImagePath) throws IOException {
+        //Exctract the name of the image from the src attribute
+        int indexname = src.lastIndexOf("/");
+        if (indexname == src.length()) {
+            src = src.substring(1, indexname);
+        }
+        indexname = src.lastIndexOf("/");
+        String name = src.substring(indexname, src.length());
+        System.out.println("the name is " +name);
+        //Open a URL Stream
+        URL url = new URL(src);
+        InputStream in = url.openStream();
+        //OutputStream out = new BufferedOutputStream(new FileOutputStream( "/home/satrio/ImageCrawl"+ name));
+        OutputStream out = new BufferedOutputStream(new FileOutputStream(folderImagePath+"/"+ name));
+        for (int b; (b = in.read()) != -1;) {
+                out.write(b);
+        }
+        out.close();
+        in.close();
+        //System.out.println("success save image to device!");
+        
+    }
+    
+    private void getFile(String absUrl, String folderFilePath) {
+        // cari '/' dari link
+        int indexname = absUrl.lastIndexOf("/");
+        
+        // jika '/' ada di paling akhir, hilangkan '/' yg paling akhir, biar bisa ambil nama filenya
+        if (indexname == absUrl.length()) {
+            absUrl = absUrl.substring(1, indexname); // '/' paling akhir sudah hilang
+        }
+        
+        // cari '/' baru yg terakhir
+        indexname = absUrl.lastIndexOf("/");
+        
+        // ambil kata-kata setelah '/', simpan ke variable nama. Nama disini akan jadi nama file yg disimpan ke folder
+        String name = absUrl.substring(indexname+1, absUrl.length());
+        //System.out.println("the name is " +name);
+        
+        // proses filter, jika namanya mengandung .pdf .doc .docx .txt akan disimpan
+        if( name.contains(".pdf") || name.contains(".doc") 
+            || name.contains(".docx") || name.contains(".txt")) {
+            URL url;
+            try {
+                // membuka link file yg downloadable
+                url = new URL(absUrl);
+                System.out.println("url file = "+url);
+                
+                // menggunakan java i/o untuk penyimpanan file ke folder
+                InputStream in = url.openStream();
+                // "/home/satrio/FileCrawl/" adalah letak foldernya
+                //OutputStream out = new BufferedOutputStream(
+                //        new FileOutputStream( "/home/satrio/FileCrawl/"+ name));
+                OutputStream out = new BufferedOutputStream(
+                        new FileOutputStream(folderFilePath + "/" + name));
+                for (int b; (b = in.read()) != -1;) {
+                        out.write(b);
+                }
+                out.close();
+                in.close();
+                System.out.println("success save file to device!");
+            } catch (MalformedURLException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
 
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                updateTextArea(new String(b, off, len));
+        }
+    }
+    
+    public void crawl(String url, String folderFilePath) {
+        try {
+            // membuat koneksi ke url
+            Connection connection = Jsoup.connect(url);
+            
+            // mentransform page menjadi document untuk diextract nantinya
+            Document htmlDocument = connection.get();
+            this.htmlDocument = htmlDocument;
+            
+            File NewFolder = null;
+            
+            // 200 itu tanda kalo semua koneksi OK
+            if(connection.response().statusCode() == 200) { 
+                System.out.println("**Visiting** Received web page at " + url);
+                // save html ke txt
+                NewFolder = new File(""+folderFilePath+"/"+numb);
+                NewFolder.mkdir();
+                PrintWriter pw = new PrintWriter(NewFolder.getAbsolutePath()+"/html"+numb+".txt");
+                pw.println(htmlDocument.html());
+                pw.close();
+            }
+            else{
+                System.err.println("terjadi error !");
             }
 
-            @Override
-            public void write(byte[] b) throws IOException {
-                write(b, 0, b.length);
+            // jika page yg dibuka bukan html
+            if(!connection.response().contentType().contains("text/html")) {
+                // show failure message, not crawl
+                System.out.println("**Failure** Retrieved something other than HTML");
             }
-        };
+            
+            // get all link
+            Elements linksOnPage = htmlDocument.select("a[href]");
+            System.out.println("Found (" + linksOnPage.size() + ") links");
 
-        System.setOut(new PrintStream(out, true));
-        System.setErr(new PrintStream(out, true));
+            // untuk setiap link akan ditampung di arraylist links
+            for(Element link : linksOnPage) {
+                System.out.println(link.absUrl("href"));
+                this.links.add(link.absUrl("href"));
+
+                // jika linknya downloadable maka download !
+                if(link.absUrl("href").lastIndexOf("/")!=link.absUrl("href").length()){
+                    // proses download file, disimpan ke folder device
+                    getFile(link.absUrl("href"), NewFolder.getAbsolutePath());
+                }
+            }
+
+            // get image dari document
+            Elements img = htmlDocument.getElementsByTag("img");
+
+            // untuk setiap image
+            for (Element el : img) {
+                // untuk setiap element dapatkan link imagenya
+                String src = el.absUrl("src");
+                System.out.println("Image Found!");
+                System.out.println("src attribute is : "+src);
+                //proses simpan image ke folder device
+                getImages(src,NewFolder.getAbsolutePath());
+            }
+            
+            // jika proses 1 url sudah dilakukan, tambahkan numb
+            numb++;
+
+        }
+        catch(IOException ioe) {
+                // Tidak berhasil request HTTP
+        }
     }
     
     /**
