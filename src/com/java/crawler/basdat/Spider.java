@@ -88,6 +88,7 @@ public class Spider {
                 this.listPageVisited.add(currentUrl); 
 
                 // tambah semua link hasil crawling ke listPageToVisit
+                // TODO filter url
                 seeding(); 
 
                 // nandain doang URL apa aja yg udah dicrawl
@@ -149,7 +150,7 @@ public class Spider {
 
             // untuk setiap link akan ditampung di arraylist links
             for(Element link : linksOnPage) {
-                //System.out.println(link.absUrl("href"));
+                System.out.println(link.absUrl("href"));
                 this.links.add(link.absUrl("href"));
 
                 // jika linknya downloadable maka download !
@@ -291,7 +292,7 @@ public class Spider {
                 }
                 out.close();
                 in.close();
-                System.out.println("success save pdf to device!");
+                System.out.println("success save file to device!");
             } catch (MalformedURLException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();

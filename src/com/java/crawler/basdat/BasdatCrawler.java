@@ -26,41 +26,9 @@ public class BasdatCrawler extends javax.swing.JFrame {
     public BasdatCrawler() {
         initComponents();
         spider = new Spider();
-        redirectSystemStreams();
-    }
-    
-    //The following codes set where the text get redirected.    
-    private void updateTextArea(final String text) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-              txtCrawlingProcess.append(text);
-            }
-        });
+//        redirectSystemStreams();
     }
 
-    //Followings are The Methods that do the Redirect, you can simply Ignore them. 
-    private void redirectSystemStreams() {
-        OutputStream out = new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                updateTextArea(String.valueOf((char) b));
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                updateTextArea(new String(b, off, len));
-            }
-
-            @Override
-            public void write(byte[] b) throws IOException {
-                write(b, 0, b.length);
-            }
-        };
-
-        System.setOut(new PrintStream(out, true));
-        System.setErr(new PrintStream(out, true));
-    }
-    
     public void openFilePathDialog(JTextField textField){
         chooser.setFileSelectionMode(chooser.FILES_AND_DIRECTORIES);
         int returnval = chooser.showOpenDialog(BasdatCrawler.this);
@@ -296,6 +264,38 @@ public class BasdatCrawler extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnStartCrawlActionPerformed
 
+    //The following codes set where the text get redirected.    
+    private void updateTextArea(final String text) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+              txtCrawlingProcess.append(text);
+            }
+        });
+    }
+
+    //Followings are The Methods that do the Redirect, you can simply Ignore them. 
+    private void redirectSystemStreams() {
+        OutputStream out = new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                updateTextArea(String.valueOf((char) b));
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                updateTextArea(new String(b, off, len));
+            }
+
+            @Override
+            public void write(byte[] b) throws IOException {
+                write(b, 0, b.length);
+            }
+        };
+
+        System.setOut(new PrintStream(out, true));
+        System.setErr(new PrintStream(out, true));
+    }
+    
     /**
      * @param args the command line arguments
      */
