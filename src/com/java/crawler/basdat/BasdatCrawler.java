@@ -16,6 +16,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -69,6 +70,9 @@ public class BasdatCrawler extends javax.swing.JFrame {
         }
     }
 
+    public void outputConsole(JTextArea textArea, String message){
+        textArea.append(message);
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -265,6 +269,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
         
         // ketika button start crawl di klik akan memulai crawling
         System.out.println("starting crawl");
+        outputConsole(txtCrawlingProcess, "starting crawl");
         
         // pastikan listPageToVisit & listPageVisited dimulai dari kosong
         listPageToVisit.clear();
@@ -297,6 +302,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
                 if(listPageToVisit.size() > 0){
                     currentUrl = this.getNextUrl();
                     System.out.println("current url to crawl = " + currentUrl);
+                    outputConsole(txtCrawlingProcess, "current url to crawl = " + currentUrl);
 
                     // proses crawling, banyak yg terjadi disini
                     this.crawl(currentUrl, filePath); 
@@ -304,12 +310,14 @@ public class BasdatCrawler extends javax.swing.JFrame {
                     // setelah crawling add current URL ke listPageVisited
                     this.listPageVisited.add(currentUrl); 
 
-                    // tambah semua link hasil crawling ke listPageToVisit
-                    listPageToVisit.addAll(links);
+                    // tambah semua link hasil crawling ke listPageToVisit jika kurang dari 2 milyar
+                    if(listPageToVisit.size() < 1000000000)
+                        listPageToVisit.addAll(links);
 
                     // nandain doang URL apa aja yg udah dicrawl
                     for(String s : this.listPageVisited) {
                         System.out.println("\n" + s + " sudah dicrawl, yeah !");
+                        outputConsole(txtCrawlingProcess, s + " sudah dicrawl, yeah !");
                     }
                 }
                 else{
@@ -318,6 +326,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
             }
             // proses crawling sudah selesai, show message finished
             System.out.println("\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
+            outputConsole(txtCrawlingProcess, "\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
             
         }
         else{
@@ -423,6 +432,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
             // 200 itu tanda kalo semua koneksi OK
             if(connection.response().statusCode() == 200) { 
                 System.out.println("**Visiting** Received web page at " + url);
+                outputConsole(txtCrawlingProcess, "**Visiting** Received web page at " + url);
                 // save html ke txt
                 NewFolder = new File(""+folderFilePath+"/"+numb);
                 NewFolder.mkdir();
@@ -438,11 +448,13 @@ public class BasdatCrawler extends javax.swing.JFrame {
             if(!connection.response().contentType().contains("text/html")) {
                 // show failure message, not crawl
                 System.out.println("**Failure** Retrieved something other than HTML");
+                outputConsole(txtCrawlingProcess, "**Failure** Retrieved something other than HTML");
             }
             
             // get all link
             Elements linksOnPage = htmlDocument.select("a[href]");
             System.out.println("Found (" + linksOnPage.size() + ") links");
+            outputConsole(txtCrawlingProcess, "Found (" + linksOnPage.size() + ") links");
 
             // untuk setiap link akan ditampung di arraylist links
             for(Element link : linksOnPage) {
