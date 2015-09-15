@@ -6,8 +6,12 @@
 package com.java.crawler.basdat;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +37,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
     private int LIMIT;                            // limiter yg akan menentukan berapa page yg akan dicrawl
     private ArrayList<String> listPageVisited;    // list page yg sudah pernah dicrawl, untuk pencegahan agar tidak terjadi crawl page yg sama berkali-kali
     private ArrayList<String> listPageToVisit;    // list page yg harus dikunjungi
+    private ArrayList<String> listPreviousPageVisited;    // list page yang sudah pernah dikunjungi periode sebelumnya (dari file databse url)
     
     // menggunakan user_agent tipuan, agar browser mengenali robot sebagai browser beneran haha
     private static final String USER_AGENT =
@@ -50,6 +55,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
         initComponents();
         listPageVisited = new ArrayList<String>();
         listPageToVisit = new ArrayList<String>();
+        listPreviousPageVisited = new ArrayList<String>();
         links = new ArrayList<String>();
     }
 
@@ -95,6 +101,9 @@ public class BasdatCrawler extends javax.swing.JFrame {
         btnFilePath = new javax.swing.JButton();
         jLabel7 = new javax.swing.JLabel();
         txtLimit = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        btnDBUrlPath = new javax.swing.JButton();
+        txtDBUrlPath = new javax.swing.JTextField();
         jPanel3 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         txtCrawlingProcess = new javax.swing.JTextArea();
@@ -134,9 +143,9 @@ public class BasdatCrawler extends javax.swing.JFrame {
             }
         });
 
-        jLabel2.setText("Web address :");
+        jLabel2.setText("Web address * :");
 
-        jLabel3.setText("Save Crawling Result to :");
+        jLabel3.setText("Save Crawling Result to *:");
 
         txtFilePath.setEditable(false);
 
@@ -147,7 +156,16 @@ public class BasdatCrawler extends javax.swing.JFrame {
             }
         });
 
-        jLabel7.setText("Limit Crawl :");
+        jLabel7.setText("Limit Crawl *:");
+
+        jLabel4.setText("Previous Crawl Data :");
+
+        btnDBUrlPath.setText("DB URL Path");
+        btnDBUrlPath.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDBUrlPathActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -161,14 +179,19 @@ public class BasdatCrawler extends javax.swing.JFrame {
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel2)
                             .addComponent(jLabel3)
-                            .addComponent(jLabel7))
+                            .addComponent(jLabel7)
+                            .addComponent(jLabel4))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addComponent(btnDBUrlPath)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtDBUrlPath))
                             .addComponent(txtLimit)
                             .addGroup(jPanel2Layout.createSequentialGroup()
                                 .addComponent(btnFilePath, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(txtFilePath, javax.swing.GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE))
+                                .addComponent(txtFilePath, javax.swing.GroupLayout.DEFAULT_SIZE, 527, Short.MAX_VALUE))
                             .addComponent(txtURL, javax.swing.GroupLayout.Alignment.TRAILING))))
                 .addContainerGap())
         );
@@ -188,7 +211,12 @@ public class BasdatCrawler extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel7)
                     .addComponent(txtLimit))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 51, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(btnDBUrlPath)
+                    .addComponent(txtDBUrlPath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 22, Short.MAX_VALUE)
                 .addComponent(btnStartCrawl)
                 .addContainerGap())
         );
@@ -218,7 +246,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel5)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 209, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 197, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -269,16 +297,48 @@ public class BasdatCrawler extends javax.swing.JFrame {
         
         // ketika button start crawl di klik akan memulai crawling
         System.out.println("starting crawl");
-        outputConsole(txtCrawlingProcess, "starting crawl");
         
         // pastikan listPageToVisit & listPageVisited dimulai dari kosong
         listPageToVisit.clear();
         listPageVisited.clear();
+        listPreviousPageVisited.clear();
         
         // check user input
-        if (!"".equals(txtURL.getText()) &&
-                !"".equals(txtFilePath.getText()) &&
-                !"".equals(txtLimit.getText())) {
+        if (!"".equals(txtURL.getText()) && !"".equals(txtFilePath.getText()) && !"".equals(txtLimit.getText())) {
+            
+            // kalo sudah pernah crawling sebelumnya, dan db urlnya diset, maka masukkan db
+            if(!"".equals(txtDBUrlPath.getText())){
+                // read file per line, masukkan ke listPrevious
+                BufferedReader br = null;
+
+		try {
+
+                    String sCurrentLine;
+
+                    br = new BufferedReader(new FileReader(txtDBUrlPath.getText()));
+
+                    while ((sCurrentLine = br.readLine()) != null) {
+                        // masukkan ke listPrevious
+                        listPreviousPageVisited.add(sCurrentLine);
+                    }
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+                    try {
+                            if (br != null)br.close();
+                    } catch (IOException ex) {
+                            ex.printStackTrace();
+                    }
+		}
+            }
+            else{
+                // set listPrevious menjadi 0, tanda bahwa tidak ada db url yang dimasukkan atau belum pernah crawling sebelumnya
+                listPreviousPageVisited.clear();
+            }
+            
+            
+            System.err.println(listPreviousPageVisited.size()+" size listPrevious");
             // user input is valid, get value dari field
             String url = txtURL.getText();
             String filePath = txtFilePath.getText();
@@ -296,34 +356,59 @@ public class BasdatCrawler extends javax.swing.JFrame {
             
             // start crawling
             // proses crawl, selama belum mencapai LIMIT proses crawling akan terus berjalan
+            // FIX THIS bug limit
             while(this.listPageVisited.size() < LIMIT){
                 String currentUrl;
-
-                if(listPageToVisit.size() > 0){
+                if(listPageToVisit.size()==1){ // tanda root akan dicrawl
+                    currentUrl = listPageToVisit.remove(0);
+                    System.out.println("current url to crawl = " + currentUrl+"\n");
+                }
+                else if(listPageToVisit.size() > 0 && listPageToVisit.size()!=1){
                     currentUrl = this.getNextUrl();
-                    System.out.println("current url to crawl = " + currentUrl);
-                    outputConsole(txtCrawlingProcess, "current url to crawl = " + currentUrl);
-
-                    // proses crawling, banyak yg terjadi disini
-                    this.crawl(currentUrl, filePath); 
-
-                    // setelah crawling add current URL ke listPageVisited
-                    this.listPageVisited.add(currentUrl); 
-
-                    // tambah semua link hasil crawling ke listPageToVisit jika kurang dari 2 milyar
-                    if(listPageToVisit.size() < 1000000000)
-                        listPageToVisit.addAll(links);
-
-                    // nandain doang URL apa aja yg udah dicrawl
-                    for(String s : this.listPageVisited) {
-                        System.out.println("\n" + s + " sudah dicrawl, yeah !");
-                        outputConsole(txtCrawlingProcess, s + " sudah dicrawl, yeah !");
-                    }
+                    System.out.println("current url to crawl = " + currentUrl+"\n");
                 }
                 else{
                     break;
                 }
+                
+                 // proses crawling, banyak yg terjadi disini
+                this.crawl(currentUrl, filePath); 
+
+                // setelah crawling add current URL ke listPageVisited
+                this.listPageVisited.add(currentUrl);
+
+                // tambah semua link hasil crawling ke listPageToVisit jika kurang dari 1 milyar
+                if(listPageToVisit.size() < 1000000000)
+                    listPageToVisit.addAll(links);
+
+                // nandain doang URL apa aja yg udah dicrawl
+                for(String s : this.listPageVisited) {
+                    System.out.println(s + " sudah dicrawl, yeah !");
+                }
             }
+            
+            // sebelum proses crawling selesai, simpan list url yg sudah pernah dicrawl ke file
+            try {
+                File file = new File(txtFilePath.getText()+"/dbUrl.txt");
+
+                // if file doesnt exists, then create it
+                if (!file.exists()) {
+                    file.createNewFile();
+                }
+
+                FileWriter fw = new FileWriter(file.getAbsoluteFile());
+                BufferedWriter bw = new BufferedWriter(fw);
+                for(String s : this.listPageVisited) {
+                    bw.write(s+"\n");
+                }
+                bw.close();
+
+                System.out.println("Done Save list URL to file");
+
+            } catch (IOException e) {
+                    e.printStackTrace();
+            }
+            
             // proses crawling sudah selesai, show message finished
             System.out.println("\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
             outputConsole(txtCrawlingProcess, "\n**Done** Visited " + this.listPageVisited.size() + " web page(s)");
@@ -334,13 +419,37 @@ public class BasdatCrawler extends javax.swing.JFrame {
                     "ERROR", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnStartCrawlActionPerformed
+
+    private void btnDBUrlPathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDBUrlPathActionPerformed
+        // ketika sudah memiliki DB url yang sudah pernah dikunjungi, set ini !
+        chooser.setFileSelectionMode(chooser.FILES_ONLY);
+        int returnval = chooser.showOpenDialog(BasdatCrawler.this);
+        if (returnval == chooser.APPROVE_OPTION){
+            File file = chooser.getSelectedFile();
+            try {
+                if (file.isFile()){
+                    txtDBUrlPath.setText(file.getAbsolutePath().toString());
+                }
+            } catch (Exception ee) {
+                JOptionPane.showMessageDialog(BasdatCrawler.this, "Choose File First");
+            }
+        }
+    }//GEN-LAST:event_btnDBUrlPathActionPerformed
     
     private String getNextUrl() {
         String nextUrl;
-        do {
-            // melakukan dequeue sampai link yg belum dikunjungi didapat atau melakukan dequeue selama nextUrl ada dalam listPageVisited
-            nextUrl = this.listPageToVisit.remove(0);
-        } while(listPageVisited.contains(nextUrl)); 
+        if(listPreviousPageVisited.size()==0){ // belum pernah crawl sebelumnya
+            do {
+                // melakukan dequeue sampai link yg belum dikunjungi didapat atau melakukan dequeue selama nextUrl ada dalam listPageVisited
+                nextUrl = this.listPageToVisit.remove(0);
+            } while(listPageVisited.contains(nextUrl));
+        }
+        else{ // sudah pernah crawl sebelumnya
+            do {
+                // melakukan dequeue sampai link yg belum dikunjungi didapat atau melakukan dequeue selama nextUrl ada dalam listPageVisited
+                nextUrl = this.listPageToVisit.remove(0);
+            } while(listPageVisited.contains(nextUrl) || listPreviousPageVisited.contains(nextUrl) );
+        }
 
         return nextUrl; // return link yang belum dikunjungi untuk dicrawl
     }
@@ -350,14 +459,14 @@ public class BasdatCrawler extends javax.swing.JFrame {
         int indexname = src.lastIndexOf("/");
         
         // jika '/' ada pada posisi paling akhir dari suatu url, hilangkan
-        if (indexname == src.length() && src.length()<255 && src.length() > 0) {
+        if (indexname == src.length()) {
             src = src.substring(1, indexname);
         }
         
         //cari '/' lagi untuk dapatkan nama gambarnya
         indexname = src.lastIndexOf("/");
         
-        String name = src.substring(indexname+1, src.length());
+        String name = src.substring(indexname, src.length());
         
         // Open a URL Stream, proses simpan gambar ke disk
         URL url = new URL(src);
@@ -431,8 +540,8 @@ public class BasdatCrawler extends javax.swing.JFrame {
             
             // 200 itu tanda kalo semua koneksi OK
             if(connection.response().statusCode() == 200) { 
-                System.out.println("**Visiting** Received web page at " + url);
-                outputConsole(txtCrawlingProcess, "**Visiting** Received web page at " + url);
+                System.out.println("**Visiting"+numb+" ** Received web page at " + url);
+                
                 // save html ke txt
                 NewFolder = new File(""+folderFilePath+"/"+numb);
                 NewFolder.mkdir();
@@ -454,14 +563,14 @@ public class BasdatCrawler extends javax.swing.JFrame {
             // get all link
             Elements linksOnPage = htmlDocument.select("a[href]");
             System.out.println("Found (" + linksOnPage.size() + ") links");
-            outputConsole(txtCrawlingProcess, "Found (" + linksOnPage.size() + ") links");
 
             // untuk setiap link akan ditampung di arraylist links
             for(Element link : linksOnPage) {
 
                 // link yg didapat dari suatu page, difilter terlebih dahulu agar dapat page berita saja
                 if(link.absUrl("href").contains("merdeka.com") && (!link.absUrl("href").contains("#"))
-                        && (!link.absUrl("href").contains("?")) && (link.absUrl("href").contains(".html"))){
+                        && (!link.absUrl("href").contains("?")) && (link.absUrl("href").contains(".html"))
+                        && (!link.absUrl("href").contains("{")) && (!link.absUrl("href").contains("}"))){
                     this.links.add(link.absUrl("href"));
                 }
                 
@@ -492,7 +601,8 @@ public class BasdatCrawler extends javax.swing.JFrame {
 
         }
         catch(IOException ioe) {
-                // Tidak berhasil request HTTP
+            // Tidak berhasil request HTTP
+            System.err.println(ioe.getMessage());
         }
     }
     
@@ -532,12 +642,14 @@ public class BasdatCrawler extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnDBUrlPath;
     private javax.swing.JButton btnFilePath;
     private javax.swing.JButton btnStartCrawl;
     private javax.swing.JFileChooser chooser;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JPanel jPanel1;
@@ -546,6 +658,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel mainPane;
     private javax.swing.JTextArea txtCrawlingProcess;
+    private javax.swing.JTextField txtDBUrlPath;
     private javax.swing.JTextField txtFilePath;
     private javax.swing.JTextField txtLimit;
     private javax.swing.JTextField txtURL;

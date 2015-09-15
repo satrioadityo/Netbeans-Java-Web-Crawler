@@ -113,19 +113,25 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="btnStartCrawl" max="32767" attributes="0"/>
-                          <Group type="102" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="jLabel2" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabel7" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel4" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="102" attributes="0">
+                                      <Component id="btnDBUrlPath" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Component id="txtDBUrlPath" max="32767" attributes="0"/>
+                                  </Group>
                                   <Component id="txtLimit" max="32767" attributes="0"/>
                                   <Group type="102" alignment="0" attributes="0">
                                       <Component id="btnFilePath" min="-2" pref="89" max="-2" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="txtFilePath" pref="534" max="32767" attributes="0"/>
+                                      <Component id="txtFilePath" pref="527" max="32767" attributes="0"/>
                                   </Group>
                                   <Component id="txtURL" alignment="1" max="32767" attributes="0"/>
                               </Group>
@@ -154,7 +160,13 @@
                           <Component id="jLabel7" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="txtLimit" alignment="3" max="32767" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="51" max="32767" attributes="0"/>
+                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="btnDBUrlPath" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="txtDBUrlPath" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace pref="22" max="32767" attributes="0"/>
                       <Component id="btnStartCrawl" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -178,12 +190,12 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel2">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Web address :"/>
+                <Property name="text" type="java.lang.String" value="Web address * :"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel3">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Save Crawling Result to :"/>
+                <Property name="text" type="java.lang.String" value="Save Crawling Result to *:"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JTextField" name="txtFilePath">
@@ -201,10 +213,25 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel7">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Limit Crawl :"/>
+                <Property name="text" type="java.lang.String" value="Limit Crawl *:"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JTextField" name="txtLimit">
+            </Component>
+            <Component class="javax.swing.JLabel" name="jLabel4">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Previous Crawl Data :"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JButton" name="btnDBUrlPath">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="DB URL Path"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnDBUrlPathActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JTextField" name="txtDBUrlPath">
             </Component>
           </SubComponents>
         </Container>
@@ -232,7 +259,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jLabel5" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jScrollPane1" pref="209" max="32767" attributes="0"/>
+                      <Component id="jScrollPane1" pref="197" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
