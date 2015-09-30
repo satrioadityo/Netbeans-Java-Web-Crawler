@@ -457,7 +457,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
     public void crawl(String url, String folderFilePath) {
         try {
             // membuat koneksi ke url
-            Connection connection = Jsoup.connect(url);
+            Connection connection = Jsoup.connect(url).userAgent(USER_AGENT);
             
             // mentransform page menjadi document untuk diextract nantinya
             Document htmlDocument = connection.get();
@@ -467,14 +467,52 @@ public class BasdatCrawler extends javax.swing.JFrame {
             
             // 200 itu tanda kalo semua koneksi OK
             if(connection.response().statusCode() == 200) { 
-                System.out.println("**Visiting"+numb+" ** Received web page at " + url);
+                System.out.println("**Visiting "+numb+" ** Received web page at " + url);
                 
                 // save html ke txt
-                NewFolder = new File(""+folderFilePath+"/"+numb);
+                NewFolder = new File(""+folderFilePath);
                 NewFolder.mkdir();
-                PrintWriter pw = new PrintWriter(NewFolder.getAbsolutePath()+"/html"+numb+".txt");
-                pw.println(htmlDocument.html());
-                pw.close();
+                PrintWriter pw = new PrintWriter(NewFolder.getAbsolutePath()+"/raw_web.txt");
+                
+                // TODO get the url, question, {user, answer}, {next_url}
+                
+                // question
+                Elements question = htmlDocument.select(".QuestionArea");
+                for(Element el : question){
+                    System.err.println("{{{" + el.text() + "}}}");
+                }
+                
+                // user, answer
+                Elements answer = htmlDocument.select(".pagedlist_item");
+                int index = 1;
+                for(Element el : answer){
+                    if(index != 2){
+                        System.err.println("{"+el.text()+"}, ");
+                    }
+                    else{
+                        // do nothing
+                    }
+                    index++;
+                }
+                
+                // get all link (next_url)
+                Elements linksOnPage = htmlDocument.select("a[href]");
+                System.out.println("Found (" + linksOnPage.size() + ") links");
+
+                // untuk setiap link akan ditampung di arraylist links
+                for(Element link : linksOnPage) {
+                    // link yg didapat dari suatu page, difilter terlebih dahulu agar dapat page berita saja
+                    if(link.absUrl("href").contains("quora.com") && link.absUrl("href").contains("-") 
+                            && (!link.absUrl("href").contains("#")) && (!link.absUrl("href").contains("?")) 
+                            && (!link.absUrl("href").contains(".html")) && (!link.absUrl("href").contains("{")) 
+                            && (!link.absUrl("href").contains("}"))){
+                        System.out.println("{"+ link.absUrl("href")+ "}");
+                        this.links.add(link.absUrl("href"));
+                    }
+                }
+                
+//                pw.println(htmlDocument.html());
+//                pw.close();
             }
             else{
                 System.err.println("terjadi error !");
@@ -487,21 +525,7 @@ public class BasdatCrawler extends javax.swing.JFrame {
                 outputConsole(txtCrawlingProcess, "**Failure** Retrieved something other than HTML");
             }
             
-            // get all link
-            Elements linksOnPage = htmlDocument.select("a[href]");
-            System.out.println("Found (" + linksOnPage.size() + ") links");
-
-            // untuk setiap link akan ditampung di arraylist links
-            for(Element link : linksOnPage) {
-                // link yg didapat dari suatu page, difilter terlebih dahulu agar dapat page berita saja
-                if(link.absUrl("href").contains("quora.com") && link.absUrl("href").contains("-") 
-                        && (!link.absUrl("href").contains("#")) && (!link.absUrl("href").contains("?")) 
-                        && (!link.absUrl("href").contains(".html")) && (!link.absUrl("href").contains("{")) 
-                        && (!link.absUrl("href").contains("}"))){
-                    System.out.println(link.absUrl("href"));
-                    this.links.add(link.absUrl("href"));
-                }
-            }
+            
             // jika proses 1 url sudah dilakukan, tambahkan numb
             numb++;
 
